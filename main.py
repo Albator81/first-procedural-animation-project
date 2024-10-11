@@ -6,13 +6,15 @@ from kivy.vector import Vector
 
 
 class Joint:
-    def __init__(self, x=100, y=100, radius=25, color=(1, 0, 0), angle=0):
-        self.x = x                   # X position of the joint
-        self.y = y                   # Y position of the joint
-        self.radius = radius          # Distance to the next joint
-        self.color = color            # Color for rendering
-        self.angle = angle            # Angle for joint rotation (optional)
-        self.connections = []         # List of connected joints
+    def __init__(self, x=100, y=100, radius=25, color=(1, 0, 0), angle=0, stretch_limit=1.10, retract_limit=0.90):
+        self.x = x              # X position of the joint
+        self.y = y              # Y position of the joint
+        self.radius = radius    # Distance to the next joint
+        self.angle = angle      # Angle for joint rotation (optional)
+        self.stretch_limit = stretch_limit   # interval: [1;+inf[
+        self.retract_limit = retract_limit   # interval: ]0;1]
+        self.color = color      # Color for rendering
+        self.connections = []   # List of connected joints
 
     def attach(self, joint):
         """Attach another joint to this joint."""
@@ -34,10 +36,10 @@ class Joint:
             distance = v.length()
 
             # Restrict movement based on allowed stretch
-            stretch_limit = 1.30
-            if distance > self.radius * stretch_limit or distance < self.radius / stretch_limit:
+
+            if distance > self.radius * self.stretch_limit or distance < self.radius * self.retract_limit:
                 # Normalize the v vector and scale it to the joint's radius
-                v = v.normalize() * boundary(distance, self.radius / stretch_limit, self.radius * stretch_limit)
+                v = v.normalize() * boundary(distance, self.radius * self.retract_limit, self.radius * self.stretch_limit)
                 joint.x = self.x + v.x
                 joint.y = self.y + v.y
 
@@ -47,15 +49,15 @@ class Joint:
     def propagate_draw(self, canvas):
         """Draw the joint and all its connections on a widget canvas."""
         with canvas:
+            for joint in self.connections:
+                Line(points=[self.x, self.y, joint.x, joint.y], width=2)
+                joint.propagate_draw(canvas)
             Color(*self.color)
             Line(circle=(self.x, self.y, self.radius), width=3)
             p_r = 8
             Ellipse(pos=(self.x-p_r, self.y-p_r), size=(p_r*2, p_r*2))
             # Draw lines to connected joints
             Color(0.7, 0.7, 0.7)
-            for joint in self.connections:
-                Line(points=[self.x, self.y, joint.x, joint.y], width=2)
-                joint.propagate_draw(canvas)
 
 
 
