@@ -49,7 +49,8 @@ class Joint:
         with canvas:
             Color(*self.color)
             Line(circle=(self.x, self.y, self.radius), width=3)
-            Ellipse(pos=(self.x-2, self.y-2), size=(4, 4))
+            p_r = 8
+            Ellipse(pos=(self.x-p_r, self.y-p_r), size=(p_r*2, p_r*2))
             # Draw lines to connected joints
             Color(0.7, 0.7, 0.7)
             for joint in self.connections:
@@ -69,6 +70,7 @@ class UpdateDrawWidget(Widget):
 
     def on_touch_move(self, touch):
         self.joint.propagate_update_position(touch.x, touch.y)
+        self.canvas.clear()
         with self.canvas:
             ClearColor(0.4, 0.2, 0.8, 1)
             ClearBuffers()
