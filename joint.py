@@ -22,85 +22,52 @@ def project(circle_center: Point, radius: float, point: Point, stretch_limit: fl
     return projected_point
 
 
-class AttachedJoints:
-    def __init__(self, *joints: 'Joint') -> None:
-        self.joints = list(joints)
-
-    def attach(self, *joints) -> None:
-        if len(joints) == 1:
-            self.joints.append(joints[0])
-        else:
-            self.joints.extend(joints)
-
-    def update(self, anchor_joint: 'Joint') -> None:
-        for joint in self.joints:
-            projected_point = project(anchor_joint.anchor_point, anchor_joint.radius, joint.anchor_point, anchor_joint.stretch_limit, anchor_joint.retract_limit)
-            joint.update(projected_point)
-
-    def draw(self, canvas, anchor_joint) -> None:
-        for joint in self.joints:
-            with canvas:
-                anchor_joint._draw_link(joint)
-            joint.draw(canvas)
-
-
 class Joint:
-    def __init__(self, x: float = 100.0, y: float = 100.0, radius: float = 25.0, color: Tuple[float, float, float, float] = (1.0, 0.0, 0.0, 1.0), angle: float = 0.0, stretch_limit: float = 1.10, retract_limit: float = 0.90,):
-        '''
-        ``stretch_limit`` interval: [1;+inf[ 
-        ``retract_limit`` interval: ]0;1]
-        '''
-        self.anchor_point = Point(x, y)
-        self.radius = radius
-        self.color = color
+    def __init__(self, x=100.0, y=100.0, r=25.0, c=(1.0, 0.0, 0.0, 1.0), angle=0.0, s_lim=1.10, r_lim=0.90):
+        self.p = Point(x, y)
+        self.r = r
+        self.c = c
         self.angle = angle
-        self.stretch_limit = stretch_limit
-        self.retract_limit = retract_limit
-        self.attached_joints = AttachedJoints()
+        self.s_lim = s_lim
+        self.r_lim = r_lim
+        self.attached = []
 
-    def attach(self, joint: 'Joint') -> None:
+    def attach(self, joint):
         if joint is self:
-            raise RecursionError("you tried to attach a joint to itself")
-        self.attached_joints.attach(joint)
+            raise RecursionError("Can't attach a joint to itself")
+        self.attached.append(joint)
 
-    def has_attached_joints(self) -> bool:
-        return len(self.attached_joints.joints) != 0
+    def update(self, new_p):
+        queue = [(self, new_p)]
+        while queue:
+            joint, p = queue.pop(0)
+            if p != joint.p:
+                joint.p = p
+            for j in joint.attached:
+                proj_p = project(joint.p, joint.r, j.p, joint.s_lim, joint.r_lim)
+                queue.append((j, proj_p))
 
-    def update(self, new_point: Point) -> None:
-        if new_point != self.anchor_point:
-            self.anchor_point = new_point
-            self.attached_joints.update(self)
+    def draw(self, canvas):
+        stack = [self]
+        visited = set()
+        while stack:
+            joint = stack.pop()
+            if joint in visited:
+                continue
+            visited.add(joint)
+            for j in joint.attached:
+                with canvas:
+                    joint._draw_link(j)
+                stack.append(j)
+            with canvas:
+                joint._draw_distance_constraint(fill=False, width=joint.r / 11)
+                joint._draw_anchor(radius=joint.r / 4, width=joint.r / 11)
 
-    def _draw_link(self, joint: 'Joint') -> None:
-        draw_line(
-            (self.anchor_point.x, self.anchor_point.y, joint.anchor_point.x, joint.anchor_point.y),
-            (0.6, 0.52, 0.5, 0.4)
-        )
+    def _draw_link(self, joint):
+        draw_line((self.p.x, self.p.y, joint.p.x, joint.p.y), (0.6, 0.52, 0.5, 0.4))
 
-    def _draw_distance_constraint(self, fill: bool = True, width: float = 8.0, outline: bool = True) -> None:
-        draw_circle(
-            self.anchor_point.x,
-            self.anchor_point.y,
-            self.radius,
-            self.color,
-            fill,
-            width,
-            outline
-        )
+    def _draw_distance_constraint(self, fill=True, width=8.0, outline=True):
+        draw_circle(self.p.x, self.p.y, self.r, self.c, fill, width, outline)
 
-    def _draw_anchor(self, radius: float = 8.0, color: Tuple[float, float, float, float] = (1.0, 1.0, 1.0, 1.0), width: float = 3.0, outline: bool = True) -> None:
-        draw_circle(
-            self.anchor_point.x,
-            self.anchor_point.y,
-            radius,
-            color,
-            True,
-            width, 
-            outline=outline
-        )
-
-    def draw(self, canvas) -> None:
-        self.attached_joints.draw(canvas, self)
-        with canvas:
-            self._draw_distance_constraint(fill=False, width=self.radius / 11)
-            self._draw_anchor(radius=self.radius / 4, width=self.radius / 11)
+    def _draw_anchor(self, radius=8.0, color=(1.0, 1.0, 1.0, 1.0), width=3.0, outline=True):
+        draw_circle(self.p.x, self.p.y, radius, color, True, width, outline)

@@ -11,10 +11,10 @@ class UpdateDrawWidget(Widget):
     m = 20
     j = joint
     for i in range(1, m):
-        if  j.has_attached_joints():
-            # j.attach(Joint(radius=20, color=(0.2*i, 1, 0.2*i)))
-            j = j.attached_joints.joints[0]
-        j.attach(Joint(radius=45-i, color=(1-0.5/m*i, 0.1/m*i, 1-0.6/m*i)))
+        if  len(j.attached) != 0:
+            # j.attach(Joint(r=20, c=(0.2*i, 1, 0.2*i)))
+            j = j.attached[0]
+        j.attach(Joint(r=45-i, c=(1-0.5/m*i, 0.1/m*i, 1-0.6/m*i)))
 
     def on_touch_move(self, touch):
         self.joint.update(Point(touch.x, touch.y))
