@@ -3,10 +3,14 @@ from typing import Sequence, Union
 
 
 class Point:
-    def __init__(self, x: float, y: float) -> None:
-        self._x = x
-        self._y = y
-        self._xy = [x, y]
+    def __init__(self, x: float | Sequence[float], y: float | None = None) -> None:
+        if y is not None:
+            self._x = x
+            self._y = y
+            self._xy = [x, y]
+        else:
+            self._x, self._y = x
+            self._xy = [x[0], x[1]]
 
     @property
     def x(self) -> float:

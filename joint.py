@@ -1,4 +1,3 @@
-from typing import Tuple, Sequence
 from point import Point
 from draw_functions import *
 from kivy.utils import boundary
@@ -37,7 +36,9 @@ class Joint:
             raise RecursionError("Can't attach a joint to itself")
         self.attached.append(joint)
 
-    def update(self, new_p):
+    def update(self, new_p, speed: float = 1, progressive: bool = False):
+        if progressive:
+            new_p = self.p + (new_p - self.p) * speed
         queue = [(self, new_p)]
         while queue:
             joint, p = queue.pop(0)
